@@ -1,15 +1,19 @@
-import * as predicates from './predicates';
+import {
+  isInUpperCase,
+  isCharABracket,
+  isInLowerCase
+} from './predicates';
 
 function parseMolecule(formula) {
   // do your science here
   let atoms = {};
   
   Array.from(formula).forEach((char, idx) => {
-    if (predicates.isInUpperCase(char)) {
+    if (isInUpperCase(char)) {
       atoms = updateWithNewAtomName(atoms, formula, idx + 1);
-    } else if (predicates.isCharABracket(char)) {
+    } else if (isCharABracket(char)) {
       // nesting!
-      
+
     }
   });
 
@@ -27,7 +31,7 @@ function updateWithNewAtomName(atoms, formula, begin) {
 
   // find the end of it and write it to
 
-  while(predicates.isInLowerCase(formula[end])) {
+  while(isInLowerCase(formula[end])) {
     end += 1;
   }
 
