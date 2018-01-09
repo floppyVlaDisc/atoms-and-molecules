@@ -1,12 +1,15 @@
+import * as predicates from './predicates';
+
 function parseMolecule(formula) {
   // do your science here
   let atoms = {};
   
   Array.from(formula).forEach((char, idx) => {
-    if (isInUpperCase(char)) {
+    if (predicates.isInUpperCase(char)) {
       atoms = updateWithNewAtomName(atoms, formula, idx + 1);
-    } else if (isCharABracket(char)) {
+    } else if (predicates.isCharABracket(char)) {
       // nesting!
+      
     }
   });
 
@@ -17,26 +20,6 @@ function getFormulaIndex(formula) {
   return Number(formula[0]) || 1;
 }
 
-function multiplyByIndex(atoms, index) {
-  return Object.keys(atoms).map(key => atoms[key] * index);
-}
-
-function isInUpperCase(char) {
-  return isString(char) && /[A-Z]/.test(char);
-}
-
-function isInLowerCase(char) {
-  return isString(char) && /[a-z]/.test(char);
-}
-
-function isCharABracket(char) {
-  return isString(char) && /[\{\}\[\]\(\)]/.test(char);
-}
-
-function isString(char) {
-  return typeof char === 'string';
-}
-
 function updateWithNewAtomName(atoms, formula, begin) {
   const atomsCopy = Object.assign({}, atoms);
   const length = formula.length;
@@ -44,7 +27,7 @@ function updateWithNewAtomName(atoms, formula, begin) {
 
   // find the end of it and write it to
 
-  while(isInLowerCase(formula[end])) {
+  while(predicates.isInLowerCase(formula[end])) {
     end += 1;
   }
 
