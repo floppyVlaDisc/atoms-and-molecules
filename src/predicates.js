@@ -13,3 +13,11 @@ export function isInLowerCase(char) {
 export function isCharABracket(char) {
   return isString(char) && /[\{\}\[\]\(\)]/.test(char);
 }
+
+export function isCharAnOpeningBracket(char) {
+  return isString(char) && /[\{\[\(]/.test(char);
+}
+
+export function isCharAClosingBracket(char) {
+  return isString(char) && /[\}\]\)]/.test(char);
+}
