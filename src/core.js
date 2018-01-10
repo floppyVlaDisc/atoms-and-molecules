@@ -1,53 +1,98 @@
 import {
   isInUpperCase,
-  isCharABracket,
+  isCharAnOpeningBracket,
+  isCharAClosingBracket,
   isInLowerCase,
 } from './predicates';
 
-function getFormulaIndex(formula) {
-  return Number(formula[0]) || 1;
+function multiplyByIndex(prevAtoms, index) {
+  const atoms = Object.assign({}, prevAtoms);
+
+  Object.keys(prevAtoms).forEach((key) => {
+    atoms[key] = prevAtoms[key] * index;
+  });
+
+  return atoms;
 }
 
-function multiplyByIndex(atoms, index) {
-  return Object.keys(atoms).map(key => atoms[key] * index);
+function updateWithNewAtomName(prevAtoms, formula, begin) {
+  const atoms = Object.assign({}, prevAtoms);
+  let currIdx = begin;
+
+  // find the currIdx of it and write it to
+
+  while (isInLowerCase(formula[currIdx])) {
+    currIdx += 1;
+  }
+
+  const atomName = formula.substring(begin, currIdx);
+
+  if (!atoms[atomName]) {
+    atoms[atomName] = 0; // quantity of atoms in molecule
+  }
+
+  const index = Number(formula[currIdx]) || 1; // O2
+  atoms[atomName] += index;
+
+  return atoms;
 }
 
-function updateWithNewAtomName(atoms, formula, begin) {
-  const atomsCopy = Object.assign({}, atoms);
-  let end = begin;
+function findEndOfNesting(formula, begin) {
+  const { length } = formula;
+  let currIdx = begin;
+  let nestingCount = 0;
+  // nestingCount looks for nestings inside current nesting
+  // this is done in order to find the right closing bracket
 
-  // find the end of it and write it to
+  while (currIdx < length) {
+    if (isCharAClosingBracket(formula[currIdx])) {
+      if (nestingCount === 0) {
+        break;
+      } else {
+        nestingCount -= 1;
+      }
+    } else if (isCharAnOpeningBracket(formula[currIdx])) {
+      nestingCount += 1;
+    }
 
-  while (isInLowerCase(formula[end])) {
-    end += 1;
+    currIdx += 1;
   }
 
-  const atomName = formula.substring(begin, end);
+  return currIdx; // the end
+}
 
-  // console.log(atomName);
+function parseSubMolecule(prevAtoms, formula) {
+  let atoms = prevAtoms ? Object.assign({}, prevAtoms) : {};
+  const { length } = formula;
 
-  if (!atomsCopy[atomName]) {
-    atomsCopy[atomName] = 0; // quantity of atomsCopy in molecule
+  for (let idx = 0; idx < length; idx += 1) {
+    if (isInUpperCase(formula[idx])) {
+      // we have encountered new atom name
+      atoms = updateWithNewAtomName(atoms, formula, idx + 1);
+    } else if (isCharAnOpeningBracket(formula[idx])) {
+      // nesting is detected!
+      // 1. find the end of the nesting
+      const end = findEndOfNesting(formula, idx + 1);
+      // 2. get the next char after the nesting - index
+      const index = Number(end + 1) || 1;
+      // 3. run recursion for subformula inside the nesting
+      // 4. multiply result of rescursion by index
+
+      // BUG - multiplies all of the elements instead of just the ones inside nesting
+
+      atoms = multiplyByIndex(parseSubMolecule(atoms, formula.substring(idx + 1, end - 1)), index);
+      // (idx + 1) - next after bracket
+      // (end - 1) - previous before bracket
+    }
   }
-  atomsCopy[atomName] += 1;
 
-  return atomsCopy;
+  return atoms;
 }
 
 function parseMolecule(formula) {
   // do your science here
-  let atoms = {};
-
-  Array.from(formula).forEach((char, idx) => {
-    if (isInUpperCase(char)) {
-      atoms = updateWithNewAtomName(atoms, formula, idx + 1);
-    } else if (isCharABracket(char)) {
-      // nesting!
-  
-    }
-  });
-
-  return multiplyByIndex(atoms, getFormulaIndex(formula));
+  const index = Number(formula[0]) || 1;
+  return multiplyByIndex(parseSubMolecule(null, formula), index);
 }
 
 export default parseMolecule;
