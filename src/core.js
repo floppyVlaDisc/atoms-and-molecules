@@ -15,9 +15,24 @@ function multiplyByIndex(prevAtoms, index) {
   return atoms;
 }
 
-function updateWithNewAtomName(prevAtoms, formula, begin) {
-  const atoms = Object.assign({}, prevAtoms);
+function getFullIndex(formula, begin) {
+  const { length } = formula;
   let currIdx = begin;
+  while (currIdx < length) {
+    if (!Number(formula[currIdx])) {
+      break;
+    }
+    currIdx += 1;
+  }
+
+  return Number(formula.substring(begin, currIdx)) || 1;
+}
+
+function updateWithNewAtomName(prevAtoms, formula, begin) {
+  // debugger;
+
+  const atoms = Object.assign({}, prevAtoms);
+  let currIdx = begin + 1;
 
   // find the currIdx of it and write it to
 
@@ -31,7 +46,7 @@ function updateWithNewAtomName(prevAtoms, formula, begin) {
     atoms[atomName] = 0; // quantity of atoms in molecule
   }
 
-  const index = Number(formula[currIdx]) || 1; // O2
+  const index = getFullIndex(formula, currIdx);
   atoms[atomName] += index;
 
   return atoms;
@@ -41,7 +56,7 @@ function findEndOfNesting(formula, begin) {
   const { length } = formula;
   let currIdx = begin;
   let nestingCount = 0;
-  // nestingCount looks for nestings inside current nesting
+  // nestingCount keeps track of nestings inside current nesting
   // this is done in order to find the right closing bracket
 
   while (currIdx < length) {
@@ -61,38 +76,65 @@ function findEndOfNesting(formula, begin) {
   return currIdx; // the end
 }
 
-function parseSubMolecule(prevAtoms, formula) {
-  let atoms = prevAtoms ? Object.assign({}, prevAtoms) : {};
+function mergeAtoms(firstAtomGroup, secondAtomGroup) {
+  const mergedGroup = {};
+
+  Object.keys(firstAtomGroup).forEach((atom) => {
+    if (secondAtomGroup[atom]) {
+      mergedGroup[atom] = firstAtomGroup[atom] + secondAtomGroup[atom];
+    } else {
+      mergedGroup[atom] = firstAtomGroup[atom];
+    }
+  });
+
+  Object.keys(secondAtomGroup).forEach((atom) => {
+    if (!firstAtomGroup[atom]) {
+      mergedGroup[atom] = secondAtomGroup[atom];
+    }
+  });
+
+  return mergedGroup;
+}
+
+function parseSubMolecule(formula = '') {
+  let atoms = {};
   const { length } = formula;
 
   for (let idx = 0; idx < length; idx += 1) {
     if (isInUpperCase(formula[idx])) {
       // we have encountered new atom name
-      atoms = updateWithNewAtomName(atoms, formula, idx + 1);
+      atoms = updateWithNewAtomName(atoms, formula, idx);
     } else if (isCharAnOpeningBracket(formula[idx])) {
       // nesting is detected!
       // 1. find the end of the nesting
       const end = findEndOfNesting(formula, idx + 1);
       // 2. get the next char after the nesting - index
-      const index = Number(end + 1) || 1;
+      const index = getFullIndex(formula, end + 1);
+
       // 3. run recursion for subformula inside the nesting
       // 4. multiply result of rescursion by index
+      // (idx + 1, end] - nesting
+      const nestedAtoms =
+        multiplyByIndex(
+          parseSubMolecule(formula.substring(idx + 1, end)),
+          index,
+        );
 
-      // BUG - multiplies all of the elements instead of just the ones inside nesting
+      // 5. combine previously written atoms with atoms from nesting
+      atoms = mergeAtoms(atoms, nestedAtoms);
 
-      atoms = multiplyByIndex(parseSubMolecule(atoms, formula.substring(idx + 1, end - 1)), index);
-      // (idx + 1) - next after bracket
-      // (end - 1) - previous before bracket
+      // 6. traverse past the nesting
+      // if we don't do that, next step would be idx += 1
+      // and we would count nesting again
+      idx = end;
     }
   }
 
   return atoms;
 }
 
-function parseMolecule(formula) {
+export default function parseMolecule(formula) {
   // do your science here
-  const index = Number(formula[0]) || 1;
-  return multiplyByIndex(parseSubMolecule(null, formula), index);
+  const index = formula ? getFullIndex(formula, 0) : 0;
+  return multiplyByIndex(parseSubMolecule(formula), index);
 }
-
-export default parseMolecule;
